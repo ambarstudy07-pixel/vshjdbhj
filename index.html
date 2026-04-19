@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anganwadi Centre Monitoring Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F8FAFC;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --text: #0f172a;
+      --text-2: #475569;
+      --text-3: #94a3b8;
+      --teal: #0f766e;
+      --teal-light: #f0fdfa;
+      --radius: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    .header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border-light);
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 8px rgba(0,0,0,.04);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-2);
+      flex-wrap: wrap;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 1.5s infinite;
+    }
+    .live-dot.green  { background: #10b981; }
+    .live-dot.amber  { background: #f59e0b; }
+    .live-dot.gray   { background: #94a3b8; animation: pulse .7s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.5; transform:scale(1.5); }
+    }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 15px; border-radius: 10px;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      border: none; transition: all .15s; font-family: inherit;
+    }
+    .btn-white {
+      background: var(--white);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-white:hover { background: #f8fafc; }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-teal:hover { opacity: .88; }
+    .btn svg { width: 13px; height: 13px; }
+    .spin { animation: rotate .7s linear infinite; }
+    @keyframes rotate { to { transform: rotate(360deg); } }
+
+    /* ── MAIN ───────────────────────────────────────────────── */
+    .main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── BANNERS ─────────────────────────────────────────────── */
+    .banner {
+      display: flex; gap: 10px; align-items: flex-start;
+      border-radius: var(--radius); padding: 12px 16px;
+      font-size: 11px; line-height: 1.5;
+    }
+    .banner svg { flex-shrink: 0; margin-top: 1px; }
+    .banner-green { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .banner-amber { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .banner-blue  { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+    .banner b { font-weight: 700; }
+    #sbanner:empty { display: none; }
+
+    /* ── SYNC BAR ────────────────────────────────────────────── */
+    .sync-bar {
+      background: var(--white);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 10px;
+      color: var(--text-2);
+    }
+    .sync-bar svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .sync-label { font-weight: 600; color: var(--text); font-size: 11px; }
+    .sync-track {
+      flex: 1; min-width: 100px; height: 4px;
+      background: #e2e8f0; border-radius: 100px; overflow: hidden;
+    }
+    .sync-fill {
+      height: 100%; background: var(--teal);
+      border-radius: 100px; transition: width 1s linear;
+    }
+    #srows { margin-left: auto; font-weight: 500; color: var(--text); }
+
+    /* ── CARD ────────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+    }
+
+    /* ── FILTERS ─────────────────────────────────────────────── */
+    .filter-card { padding: 14px 16px; }
+    .filter-card-title {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: var(--text-2);
+      margin-bottom: 10px;
+    }
+    .filter-card-title svg { width: 12px; height: 12px; opacity: .5; }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .search-wrap { flex: 1; min-width: 200px; position: relative; }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      width: 13px; height: 13px; opacity: .35;
+    }
+    input[type="text"] {
+      width: 100%; padding: 8px 10px 8px 30px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #f8fafc;
+      font-size: 11px; font-family: inherit;
+      color: var(--text); outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15,118,110,.1); }
+    select {
+      padding: 8px 28px 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px; background: #f8fafc;
+      font-size: 11px; font-family: inherit;
+      color: var(--text); outline: none; cursor: pointer;
+      min-width: 170px;
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      padding: 4px 11px; border-radius: 100px;
+      border: 1px solid var(--border);
+      font-size: 10px; font-weight: 500; cursor: pointer;
+      transition: all .15s; color: var(--text-2);
+      background: var(--white); font-family: inherit;
+    }
+    .pill:hover { border-color: #94a3b8; }
+    .pill.active { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+
+    /* ── KPI GRID ────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 700px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi {
+      background: var(--white);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 12px 13px;
+      display: flex; flex-direction: column; gap: 5px;
+      transition: box-shadow .2s;
+    }
+    .kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+    .kpi-top { display: flex; align-items: flex-start; justify-content: space-between; }
+    .kpi-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .kpi-badge {
+      font-size: 10px; font-weight: 700;
+      border-radius: 100px; padding: 2px 7px; line-height: 1.5;
+    }
+    .kpi-val { font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .kpi-lbl { font-size: 10px; color: var(--text-2); line-height: 1.4; }
+    .kpi-bar-bg { width: 100%; height: 3px; background: #e2e8f0; border-radius: 100px; margin-top: 4px; }
+    .kpi-bar-fill { height: 3px; border-radius: 100px; transition: width .7s ease; }
+    .flash-anim { animation: flashkpi .7s ease; }
+    @keyframes flashkpi { 0% { opacity: .3; } 100% { opacity: 1; } }
+
+    /* ── MID SECTION ──────────────────────────────────────────── */
+    .mid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+    @media (max-width: 900px) { .mid { grid-template-columns: 1fr; } }
+
+    .sec-inner { padding: 16px; }
+    .sec-title {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 700; color: var(--text);
+      margin-bottom: 14px;
+    }
+    .sec-title svg { width: 14px; height: 14px; }
+    .sec-title .cnt-lbl {
+      margin-left: auto; font-size: 10px;
+      font-weight: 500; color: var(--text-3);
+    }
+    .bar-row { margin-bottom: 10px; }
+    .bar-meta {
+      display: flex; justify-content: space-between;
+      font-size: 10px; margin-bottom: 4px; color: var(--text-2);
+    }
+    .bar-meta strong { color: var(--text); font-weight: 700; }
+    .bar-bg { background: #e2e8f0; border-radius: 100px; height: 6px; }
+    .bar-fill { height: 6px; border-radius: 100px; transition: width .6s ease; }
+
+    .def-item { margin-bottom: 9px; }
+    .def-item .def-term { font-size: 11px; font-weight: 600; color: var(--text); display: block; }
+    .def-item .def-desc { font-size: 10px; color: var(--text-2); display: block; margin-top: 1px; }
+
+    /* ── TABLE ───────────────────────────────────────────────── */
+    .tbl-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .tbl-header-lbl { font-size: 12px; font-weight: 700; color: var(--text); }
+    .entry-badge {
+      background: #f1f5f9; border-radius: 100px;
+      padding: 3px 10px; font-size: 10px; color: var(--text-2);
+      font-weight: 500;
+    }
+    .tbl-scroll { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    thead { position: sticky; top: 0; z-index: 5; background: #f8fafc; }
+    th {
+      padding: 8px 12px; text-align: left;
+      font-weight: 600; font-size: 10px; color: var(--text-2);
+      white-space: nowrap; border-bottom: 1px solid var(--border-light);
+    }
+    td {
+      padding: 7px 12px; white-space: nowrap; color: var(--text);
+      border-bottom: 1px solid #f8fafc;
+    }
+    tr:hover td { background: #f8fafc; }
+    .badge-pos {
+      background: #ecfdf5; color: #065f46;
+      border: 1px solid #a7f3d0;
+      border-radius: 100px; padding: 2px 8px; font-size: 9px;
+    }
+    .badge-neg {
+      background: #fef2f2; color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 100px; padding: 2px 8px; font-size: 9px;
+    }
+    .empty {
+      padding: 48px; text-align: center;
+      color: var(--text-3); font-size: 12px;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      text-align: center; font-size: 10px;
+      color: var(--text-3); padding: 16px;
+    }
+
+    /* ── SKELETON ────────────────────────────────────────────── */
+    .skel {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <h1>🏫 Anganwadi Centre Monitoring Dashboard</h1>
+      <div class="header-sub">
+        <span class="live-dot gray" id="sdot"></span>
+        <span id="stxt">Connecting to Google Sheet…</span>
+        <span id="stime" style="opacity:.5"></span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-white" onclick="manualRefresh()">
+        <svg id="rico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Refresh Now
+      </button>
+      <button class="btn btn-teal" onclick="exportCSV()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export Filtered CSV
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN ───────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Status Banner -->
+  <div id="sbanner"></div>
+
+  <!-- Auto-Sync Bar -->
+  <div class="sync-bar">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+    </svg>
+    <span class="sync-label">Auto-Sync</span>
+    <div class="sync-track"><div class="sync-fill" id="sfill" style="width:100%"></div></div>
+    <span>Next refresh in <b id="scdn">60s</b></span>
+    <span id="srows"></span>
+  </div>
+
+  <!-- Filters -->
+  <div class="card filter-card">
+    <div class="filter-card-title">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filters
+    </div>
+    <div class="filter-row">
+      <div class="search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="qbox" placeholder="Search across all columns…" oninput="applyFilters()">
+      </div>
+      <select id="divsel" onchange="applyFilters()"><option value="All">All Sub-Divisions</option></select>
+    </div>
+    <div class="pills" id="pillrow"></div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kgrid">
+    <div class="skel" style="height:96px"></div>
+    <div class="skel" style="height:96px;opacity:.85"></div>
+    <div class="skel" style="height:96px;opacity:.7"></div>
+    <div class="skel" style="height:96px;opacity:.55"></div>
+    <div class="skel" style="height:96px;opacity:.85"></div>
+    <div class="skel" style="height:96px;opacity:.7"></div>
+    <div class="skel" style="height:96px;opacity:.55"></div>
+    <div class="skel" style="height:96px;opacity:.4"></div>
+  </div>
+
+  <!-- Mid Section -->
+  <div class="mid">
+    <!-- Progress Bars -->
+    <div class="card sec-inner">
+      <div class="sec-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Current Status
+        <span class="cnt-lbl" id="tlbl"></span>
+      </div>
+      <div id="pbars"></div>
+    </div>
+    <!-- Definitions -->
+    <div class="card sec-inner">
+      <div class="sec-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Definitions Used
+      </div>
+      <div class="def-item"><span class="def-term">Adequate Seating Capacity</span><span class="def-desc">Centre has 10 or more chairs (No. of Chairs ≥ 10)</span></div>
+      <div class="def-item"><span class="def-term">Hygiene</span><span class="def-desc">Column value is "Yes" or "Done"</span></div>
+      <div class="def-item"><span class="def-term">Whitewash Done</span><span class="def-desc">Column value is "Yes" or "Done"</span></div>
+      <div class="def-item"><span class="def-term">Seating Arrangement</span><span class="def-desc">Column value is "Yes" or "Available"</span></div>
+      <div class="def-item"><span class="def-term">Registration Table</span><span class="def-desc">Column value is "Yes" or "Available"</span></div>
+      <div class="def-item"><span class="def-term">Safe Water Facility</span><span class="def-desc">Column value is "Yes" or "Available"</span></div>
+      <div class="def-item"><span class="def-term">Banners</span><span class="def-desc">Column value is "Yes" or "Available"</span></div>
+      <div class="def-item"><span class="def-term">Decoration</span><span class="def-desc">Column value is "Yes" or "Done"</span></div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="card">
+    <div class="tbl-header">
+      <span class="tbl-header-lbl">Raw Data</span>
+      <span class="entry-badge" id="ecnt">—</span>
+    </div>
+    <div class="tbl-scroll">
+      <div class="empty" id="tempty">Loading data…</div>
+      <table id="dtable" style="display:none">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer>Anganwadi Centre Monitoring Dashboard &nbsp;·&nbsp; Auto-syncs every 60 seconds from Google Sheets</footer>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────────
+  const CSV_URL   = 'https://docs.google.com/spreadsheets/d/1QXbnS5VY9vkM0g251hoTuwgqjWbrMXG7X_aVUwMAmY8/export?format=csv&gid=0';
+  const INTERVAL  = 60; // seconds
+
+  // ── MOCK FALLBACK ───────────────────────────────────────────────────────────
+  const MOCK = [
+    {'Centre Name':'AWC Ramnagar-1','Sub-Division':'Ramnagar','Tehsil':'Block A','No. of Chairs':'12','Hygiene':'Yes','Whitewash Status':'Done','Seating Arrangement':'Available','Registration Table':'Available','Safe Water Facility':'Yes','Banners':'Yes','Decoration':'Done','Worker Name':'Sunita Devi'},
+    {'Centre Name':'AWC Ramnagar-2','Sub-Division':'Ramnagar','Tehsil':'Block A','No. of Chairs':'8','Hygiene':'No','Whitewash Status':'Pending','Seating Arrangement':'Not Available','Registration Table':'Not Available','Safe Water Facility':'No','Banners':'No','Decoration':'Not Done','Worker Name':'Meena Kumari'},
+    {'Centre Name':'AWC Sadar-1','Sub-Division':'Sadar','Tehsil':'Block B','No. of Chairs':'15','Hygiene':'Done','Whitewash Status':'Yes','Seating Arrangement':'Available','Registration Table':'Yes','Safe Water Facility':'Available','Banners':'Available','Decoration':'Yes','Worker Name':'Rekha Singh'},
+    {'Centre Name':'AWC Sadar-2','Sub-Division':'Sadar','Tehsil':'Block B','No. of Chairs':'6','Hygiene':'Yes','Whitewash Status':'Done','Seating Arrangement':'Not Available','Registration Table':'Available','Safe Water Facility':'Yes','Banners':'Yes','Decoration':'Done','Worker Name':'Anita Sharma'},
+    {'Centre Name':'AWC Palam-1','Sub-Division':'Palam','Tehsil':'Block C','No. of Chairs':'10','Hygiene':'No','Whitewash Status':'No','Seating Arrangement':'Available','Registration Table':'Not Available','Safe Water Facility':'No','Banners':'Available','Decoration':'Not Done','Worker Name':'Priya Verma'},
+  ];
+
+  // ── STATE ───────────────────────────────────────────────────────────────────
+  let rawData = [], headers = [], filteredData = [], activePills = ['All'];
+  let prevHash = '', cdVal = INTERVAL, cdTimer = null;
+  const cm = {};
+
+  // ── CSV PARSER ──────────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const parseRow = line => {
+      const cols = []; let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+        else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+      cols.push(cur.trim()); return cols;
+    };
+    const hdrs = parseRow(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const vals = parseRow(lines[i]).map(v => v.replace(/^"|"$/g, '').trim());
+      const row = {}; hdrs.forEach((h, j) => { row[h] = vals[j] ?? ''; }); rows.push(row);
+    }
+    return rows;
+  }
+
+  // ── HELPERS ─────────────────────────────────────────────────────────────────
+  function hashData(rows) { return rows.map(r => Object.values(r).join('|')).join('\n').length + '_' + rows.length; }
+  function findCol(...pats) { return pats.reduce((f,p) => f || (typeof p==='string' ? headers.find(h => new RegExp(p,'i').test(h)) : null) || null, null); }
+  function isPos(v) { return v && /^(yes|done|available|true|1)$/i.test(v.trim()); }
+  function isNeg(v) { return v && /^(no|pending|not done|not available|false|0)$/i.test(v.trim()); }
+
+  function buildColMap() {
+    cm.div    = findCol('sub.?div','subdivision','tehsil','block','division');
+    cm.chair  = findCol('chair','seat.*cap','no.*chair');
+    cm.hyg    = findCol('hygien');
+    cm.wash   = findCol('whitewash','wash');
+    cm.seat   = findCol('seating.*arr','seat.*arr');
+    cm.reg    = findCol('registr.*table','reg.*table','table');
+    cm.water  = findCol('safe.*water','water.*facil','water');
+    cm.banner = findCol('banner');
+    cm.deco   = findCol('decor');
+  }
+
+  // ── KPI CONFIG ──────────────────────────────────────────────────────────────
+  const KPI = [
+    { lbl:'Total Centers Surveyed', ico:'🏫', bg:'#eff6ff', clr:'#2563eb', pb:'#dbeafe', pc:'#1e40af', isTotal:true },
+    { lbl:'Adequate Seating',       ico:'👥', bg:'#f5f3ff', clr:'#7c3aed', pb:'#ede9fe', pc:'#5b21b6', fn:r => parseInt(cm.chair && r[cm.chair] || 0) >= 10 },
+    { lbl:'Hygiene',                ico:'✨', bg:'#f0fdfa', clr:'#0f766e', pb:'#ccfbf1', pc:'#065f46', fn:r => cm.hyg    && isPos(r[cm.hyg])    },
+    { lbl:'Whitewash Done',         ico:'🎨', bg:'#fff7ed', clr:'#c2410c', pb:'#fed7aa', pc:'#9a3412', fn:r => cm.wash   && isPos(r[cm.wash])   },
+    { lbl:'Registration Table',     ico:'📋', bg:'#f0f9ff', clr:'#0369a1', pb:'#bae6fd', pc:'#075985', fn:r => cm.reg    && isPos(r[cm.reg])    },
+    { lbl:'Safe Water',             ico:'💧', bg:'#ecfeff', clr:'#0e7490', pb:'#a5f3fc', pc:'#0c4a6e', fn:r => cm.water  && isPos(r[cm.water])  },
+    { lbl:'Banners',                ico:'🚩', bg:'#fff1f2', clr:'#be123c', pb:'#fecdd3', pc:'#9f1239', fn:r => cm.banner && isPos(r[cm.banner]) },
+    { lbl:'Decoration Done',        ico:'🌿', bg:'#f0fdf4', clr:'#15803d', pb:'#bbf7d0', pc:'#14532d', fn:r => cm.deco   && isPos(r[cm.deco])   },
+  ];
+
+  const PILLS_CFG = [
+    { id:'All',  lbl:'All',                  fn:()=>true },
+    { id:'Hyg',  lbl:'Hygiene',              fn:r => cm.hyg    && isPos(r[cm.hyg])    },
+    { id:'Wash', lbl:'Whitewash Done',       fn:r => cm.wash   && isPos(r[cm.wash])   },
+    { id:'Seat', lbl:'Seating Arrangement',  fn:r => cm.seat   && isPos(r[cm.seat])   },
+    { id:'Reg',  lbl:'Registration Table',   fn:r => cm.reg    && isPos(r[cm.reg])    },
+    { id:'Wat',  lbl:'Safe Water Facility',  fn:r => cm.water  && isPos(r[cm.water])  },
+    { id:'Ban',  lbl:'Banners',              fn:r => cm.banner && isPos(r[cm.banner]) },
+    { id:'Dec',  lbl:'Decoration',           fn:r => cm.deco   && isPos(r[cm.deco])   },
+  ];
+
+  // ── STATUS BANNER ───────────────────────────────────────────────────────────
+  function setStatus(live, rowCount, changed) {
+    const dot = document.getElementById('sdot');
+    const txt = document.getElementById('stxt');
+    const bn  = document.getElementById('sbanner');
+    document.getElementById('stime').textContent  = '· Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('srows').textContent  = rowCount + ' rows in sheet';
+
+    if (live) {
+      dot.className = 'live-dot green';
+      txt.textContent = 'Live · Connected to Google Sheet';
+      if (changed) {
+        bn.innerHTML = `<div class="banner banner-blue">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          <span><b>🔄 Sheet Updated!</b> — New data detected. Dashboard now shows the latest ${rowCount} rows.</span>
+        </div>`;
+        setTimeout(() => setStatus(live, rowCount, false), 6000);
+      } else {
+        bn.innerHTML = `<div class="banner banner-green">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span><b>Connected</b> — Fetching live data from your Google Sheet (${rowCount} rows). Dashboard auto-refreshes every ${INTERVAL} seconds. Any change in the sheet will appear here automatically.</span>
+        </div>`;
+      }
+    } else {
+      dot.className = 'live-dot amber';
+      txt.textContent = '⚠ Google Sheet unreachable — showing mock data';
+      bn.innerHTML = `<div class="banner banner-amber">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><b>CORS Warning</b> — Cannot reach Google Sheets when opened as a local file. <b>Upload this file to any web server or GitHub Pages</b> and it will connect live. Make sure your sheet is shared as <i>"Anyone with the link → Viewer"</i>. Showing 5 mock rows for now.</span>
+      </div>`;
+    }
+  }
+
+  // ── COUNTDOWN ───────────────────────────────────────────────────────────────
+  function startCountdown() {
+    clearInterval(cdTimer);
+    cdVal = INTERVAL;
+    document.getElementById('sfill').style.width = '100%';
+    cdTimer = setInterval(() => {
+      cdVal--;
+      document.getElementById('scdn').textContent = cdVal + 's';
+      document.getElementById('sfill').style.width = (cdVal / INTERVAL * 100) + '%';
+      if (cdVal <= 0) { clearInterval(cdTimer); fetchSheet(true); }
+    }, 1000);
+  }
+
+  // ── FETCH ────────────────────────────────────────────────────────────────────
+  async function fetchSheet(silent = false) {
+    if (!silent) {
+      const ico = document.getElementById('rico');
+      ico.classList.add('spin');
+      setTimeout(() => ico.classList.remove('spin'), 900);
+    }
+    let live = false, changed = false;
+    try {
+      const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (!rows.length) throw new Error('empty');
+      const hash = hashData(rows);
+      changed = prevHash !== '' && hash !== prevHash;
+      prevHash = hash;
+      rawData = rows;
+      headers = Object.keys(rows[0]);
+      live = true;
+    } catch (e) {
+      if (!rawData.length) {
+        rawData = MOCK;
+        headers = Object.keys(MOCK[0]);
+      }
+    }
+    setStatus(live, rawData.length, changed);
+    buildColMap();
+    populateDivDropdown();
+    buildPills();
+    applyFilters();
+    if (changed) {
+      const g = document.getElementById('kgrid');
+      g.classList.add('flash-anim');
+      setTimeout(() => g.classList.remove('flash-anim'), 800);
+    }
+    startCountdown();
+  }
+
+  function manualRefresh() { fetchSheet(false); }
+
+  // ── DROPDOWN ─────────────────────────────────────────────────────────────────
+  function populateDivDropdown() {
+    const sel = document.getElementById('divsel');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="All">All Sub-Divisions</option>';
+    if (!cm.div) return;
+    const vals = [...new Set(rawData.map(r => r[cm.div]).filter(Boolean))].sort();
+    vals.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v; sel.appendChild(o);
+    });
+    if (vals.includes(prev)) sel.value = prev;
+  }
+
+  // ── PILLS ─────────────────────────────────────────────────────────────────────
+  function buildPills() {
+    const row = document.getElementById('pillrow');
+    row.innerHTML = '';
+    PILLS_CFG.forEach(p => {
+      const b = document.createElement('button');
+      b.className = 'pill' + (activePills.includes(p.id) ? ' active' : '');
+      b.textContent = p.lbl;
+      b.onclick = () => {
+        if (p.id === 'All') {
+          activePills = ['All'];
+        } else {
+          let n = activePills.filter(x => x !== 'All');
+          n.includes(p.id) ? (n = n.filter(x => x !== p.id)) : n.push(p.id);
+          activePills = n.length ? n : ['All'];
+        }
+        buildPills(); applyFilters();
+      };
+      row.appendChild(b);
+    });
+  }
+
+  // ── FILTERS ───────────────────────────────────────────────────────────────────
+  function applyFilters() {
+    const q   = document.getElementById('qbox').value.toLowerCase();
+    const div = document.getElementById('divsel').value;
+    filteredData = rawData.filter(row => {
+      if (q && !Object.values(row).some(v => v.toLowerCase().includes(q))) return false;
+      if (div !== 'All' && cm.div && row[cm.div] !== div) return false;
+      if (!activePills.includes('All')) {
+        const ms = PILLS_CFG.filter(p => activePills.includes(p.id));
+        if (!ms.some(m => m.fn(row))) return false;
+      }
+      return true;
+    });
+    renderKPIs(); renderBars(); renderTable();
+  }
+
+  // ── KPI RENDER ───────────────────────────────────────────────────────────────
+  function renderKPIs() {
+    const total = filteredData.length;
+    const grid  = document.getElementById('kgrid');
+    grid.innerHTML = '';
+    KPI.forEach(k => {
+      const count = k.isTotal ? total : filteredData.filter(r => k.fn(r)).length;
+      const pct   = k.isTotal ? null  : (total > 0 ? Math.round(count / total * 100) : 0);
+      const d     = document.createElement('div');
+      d.className = 'kpi';
+      d.innerHTML = `
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:${k.bg}">${k.ico}</div>
+          ${k.isTotal ? '' : `<span class="kpi-badge" style="background:${k.pb};color:${k.pc}">${pct}%</span>`}
+        </div>
+        <div class="kpi-val">${count.toLocaleString()}</div>
+        <div class="kpi-lbl">${k.lbl}</div>
+        ${k.isTotal ? '' : `<div class="kpi-bar-bg"><div class="kpi-bar-fill" style="width:${pct}%;background:${k.clr}"></div></div>`}
+      `;
+      grid.appendChild(d);
+    });
+  }
+
+  // ── PROGRESS BARS ─────────────────────────────────────────────────────────────
+  function renderBars() {
+    const total = filteredData.length;
+    document.getElementById('tlbl').textContent = total + ' centres';
+    const defs = [
+      { lbl:'Adequate Seating (≥10 chairs)', cnt: filteredData.filter(r => parseInt(cm.chair && r[cm.chair] || 0) >= 10).length, clr:'#7c3aed' },
+      { lbl:'Hygiene',            cnt: filteredData.filter(r => cm.hyg    && isPos(r[cm.hyg])).length,    clr:'#0f766e' },
+      { lbl:'Whitewash Done',     cnt: filteredData.filter(r => cm.wash   && isPos(r[cm.wash])).length,   clr:'#c2410c' },
+      { lbl:'Registration Table', cnt: filteredData.filter(r => cm.reg    && isPos(r[cm.reg])).length,    clr:'#0369a1' },
+      { lbl:'Safe Water Facility',cnt: filteredData.filter(r => cm.water  && isPos(r[cm.water])).length,  clr:'#0e7490' },
+      { lbl:'Banners',            cnt: filteredData.filter(r => cm.banner && isPos(r[cm.banner])).length, clr:'#be123c' },
+      { lbl:'Decoration Done',    cnt: filteredData.filter(r => cm.deco   && isPos(r[cm.deco])).length,   clr:'#15803d' },
+    ];
+    document.getElementById('pbars').innerHTML = defs.map(({lbl,cnt,clr}) => {
+      const p = total > 0 ? Math.round(cnt / total * 100) : 0;
+      return `<div class="bar-row">
+        <div class="bar-meta"><span>${lbl}</span><span>${cnt} / ${total} &nbsp;<strong>${p}%</strong></span></div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:${clr}"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── TABLE ─────────────────────────────────────────────────────────────────────
+  function renderTable() {
+    const tbl = document.getElementById('dtable');
+    const emp = document.getElementById('tempty');
+    document.getElementById('ecnt').textContent = `Showing ${filteredData.length} ${filteredData.length === 1 ? 'entry' : 'entries'}`;
+    if (!filteredData.length) {
+      tbl.style.display = 'none'; emp.style.display = 'block';
+      emp.textContent = 'No records match the current filters.'; return;
+    }
+    tbl.style.display = 'table'; emp.style.display = 'none';
+    document.getElementById('thead').innerHTML = '<th>#</th>' + headers.map(h => `<th>${h}</th>`).join('');
+    document.getElementById('tbody').innerHTML = filteredData.map((row, i) =>
+      `<tr><td style="color:#94a3b8;font-size:9px">${i + 1}</td>${
+        headers.map(h => {
+          const v = row[h] || '';
+          return `<td>${
+            isPos(v) ? `<span class="badge-pos">${v}</span>` :
+            isNeg(v) ? `<span class="badge-neg">${v}</span>` : v
+          }</td>`;
+        }).join('')
+      }</tr>`
+    ).join('');
+  }
+
+  // ── EXPORT ────────────────────────────────────────────────────────────────────
+  function exportCSV() {
+    const rows = [
+      headers.join(','),
+      ...filteredData.map(r => headers.map(h => `"${(r[h] || '').replace(/"/g, '""')}"`).join(','))
+    ];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'anganwadi_filtered.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── BOOT ──────────────────────────────────────────────────────────────────────
+  fetchSheet(false);
+</script>
+</body>
+</html>
