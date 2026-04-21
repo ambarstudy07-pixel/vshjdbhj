@@ -594,15 +594,28 @@ async function fetchSheet(silent = false) {
 
     headers = Object.keys(rows[0]);
 
-    // ✅ Detect "Centre Name" column dynamically
-    const centreCol = headers.find(h => /centre\s*name/i.test(h));
+    // ✅ Try to detect centre column safely
+    const centreCol = headers.find(h => /centre|center|awc/i.test(h));
 
-    // ✅ FILTER: keep only valid rows
-    const cleanedRows = rows.filter(r => {
-      if (!centreCol) return false;
-      const val = r[centreCol];
-      return val && val.toString().trim() !== '';
-    });
+    let cleanedRows;
+
+    if (centreCol) {
+      // ✅ Preferred: filter using centre column
+      cleanedRows = rows.filter(r =>
+        r[centreCol] && r[centreCol].toString().trim() !== ''
+      );
+    } else {
+      // ✅ Fallback: remove only fully empty rows
+      cleanedRows = rows.filter(r =>
+        Object.values(r).some(v => v && v.toString().trim() !== '')
+      );
+    }
+
+    // ⚠️ SAFETY: if filtering removes everything, revert
+    if (cleanedRows.length === 0) {
+      console.warn("Filtering removed all rows — reverting to raw data");
+      cleanedRows = rows;
+    }
 
     const hash = hashData(cleanedRows);
     changed = prevHash !== '' && hash !== prevHash;
@@ -611,10 +624,12 @@ async function fetchSheet(silent = false) {
     rawData = cleanedRows;
     live = true;
 
-    console.log("Raw rows:", rows.length);
-    console.log("Valid rows:", cleanedRows.length);
+    console.log("Total rows:", rows.length);
+    console.log("After cleaning:", cleanedRows.length);
 
   } catch (e) {
+    console.error("Fetch error:", e);
+
     if (!rawData.length) {
       rawData = MOCK;
       headers = Object.keys(MOCK[0]);
