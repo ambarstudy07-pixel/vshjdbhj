@@ -574,45 +574,67 @@
   }
 
   // ── FETCH ────────────────────────────────────────────────────────────────────
-  async function fetchSheet(silent = false) {
-    if (!silent) {
-      const ico = document.getElementById('rico');
-      ico.classList.add('spin');
-      setTimeout(() => ico.classList.remove('spin'), 900);
-    }
-    let live = false, changed = false;
-    try {
-      const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      const rows = parseCSV(text);
-      if (!rows.length) throw new Error('empty');
-      const hash = hashData(rows);
-      changed = prevHash !== '' && hash !== prevHash;
-      prevHash = hash;
-      rawData = rows;
-      headers = Object.keys(rows[0]);
-      live = true;
-    } catch (e) {
-      if (!rawData.length) {
-        rawData = MOCK;
-        headers = Object.keys(MOCK[0]);
-      }
-    }
-    setStatus(live, rawData.length, changed);
-    buildColMap();
-    populateDivDropdown();
-    buildPills();
-    applyFilters();
-    if (changed) {
-      const g = document.getElementById('kgrid');
-      g.classList.add('flash-anim');
-      setTimeout(() => g.classList.remove('flash-anim'), 800);
-    }
-    startCountdown();
+async function fetchSheet(silent = false) {
+  if (!silent) {
+    const ico = document.getElementById('rico');
+    ico.classList.add('spin');
+    setTimeout(() => ico.classList.remove('spin'), 900);
   }
 
-  function manualRefresh() { fetchSheet(false); }
+  let live = false, changed = false;
+
+  try {
+    const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const text = await res.text();
+    const rows = parseCSV(text);
+
+    if (!rows.length) throw new Error('empty');
+
+    headers = Object.keys(rows[0]);
+
+    // ✅ Detect "Centre Name" column dynamically
+    const centreCol = headers.find(h => /centre\s*name/i.test(h));
+
+    // ✅ FILTER: keep only valid rows
+    const cleanedRows = rows.filter(r => {
+      if (!centreCol) return false;
+      const val = r[centreCol];
+      return val && val.toString().trim() !== '';
+    });
+
+    const hash = hashData(cleanedRows);
+    changed = prevHash !== '' && hash !== prevHash;
+    prevHash = hash;
+
+    rawData = cleanedRows;
+    live = true;
+
+    console.log("Raw rows:", rows.length);
+    console.log("Valid rows:", cleanedRows.length);
+
+  } catch (e) {
+    if (!rawData.length) {
+      rawData = MOCK;
+      headers = Object.keys(MOCK[0]);
+    }
+  }
+
+  setStatus(live, rawData.length, changed);
+  buildColMap();
+  populateDivDropdown();
+  buildPills();
+  applyFilters();
+
+  if (changed) {
+    const g = document.getElementById('kgrid');
+    g.classList.add('flash-anim');
+    setTimeout(() => g.classList.remove('flash-anim'), 800);
+  }
+
+  startCountdown();
+}
 
   // ── DROPDOWN ─────────────────────────────────────────────────────────────────
   function populateDivDropdown() {
